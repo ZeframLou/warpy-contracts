@@ -1,0 +1,19 @@
+{
+  "name": "warpy-contracts",
+  "version": "1.0.0",
+  "description": "Ethereum smart contracts for Warpy",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ethereum",
+    "payment",
+    "dai"
+  ],
+  "author": "Warpy Team",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomiclabs/buidler": "^1.1.2"
+  }
+}
