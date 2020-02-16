@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "./interfaces/KyberNetwork.sol";
 import "./interfaces/Dai.sol";
-import "./interfaces/CERC20.sol";
+import "./interfaces/Chai.sol";
 
 contract WarpyRelayer is GSNRecipient, Ownable {
     using SafeMath for uint256;
@@ -16,7 +16,7 @@ contract WarpyRelayer is GSNRecipient, Ownable {
     // Contract addresses
     address public constant KYBER_ADDR = 0x818E6FECD516Ecc3849DAf6845e3EC868087B755;
     address public constant DAI_ADDR = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address public constant CDAI_ADDR = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
+    address public constant CHAI_ADDR = 0x06AF07097C9Eeb7fD685c692751D5C66dB49c215;
     address internal constant ETH_ADDR = address(
         0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
     ); // denotes ETH in KyberNetwork
@@ -25,14 +25,12 @@ contract WarpyRelayer is GSNRecipient, Ownable {
     address public constant KYBER_BENEFICIARY = 0x332D87209f7c8296389C307eAe170c2440830A47;
     bytes internal constant PERM_HINT = "PERM";
     uint256 internal constant MAX_QTY = (10**28); // 10B tokens
-    uint256 internal constant ERRCODE_OK = 0;
-    uint256 internal constant ERRCODE_ERR = 1;
 
     /**
         Main
      */
 
-    // Takes DAI from the user, converts it into cDAI, and deposits it into the sidechain bridge contract
+    // Takes DAI from the user, converts it into CHAI, and deposits it into the sidechain bridge contract
     // Also takes a fixed fee to cover the gas cost on the Gas Station Network
     function depositDAI(
         address to,
@@ -68,13 +66,13 @@ contract WarpyRelayer is GSNRecipient, Ownable {
         IRelayHub relayHub = IRelayHub(getHubAddr());
         relayHub.depositFor.value(feeInETH)(address(this));
 
-        // convert DAI to cDAI
-        CERC20 cDAI = CERC20(CDAI_ADDR);
-        dai.approve(CDAI_ADDR, amountAfterFee);
-        require(cDAI.mint(amountAfterFee) == ERRCODE_OK, "Failed to mint cDAI");
+        // convert DAI to CHAI
+        Chai chai = Chai(CHAI_ADDR);
+        dai.approve(CHAI_ADDR, amountAfterFee);
+        chai.join(address(this), amountAfterFee);
 
-        // lock cDAI to bridge contract
-        uint256 cDAIAmount = cDAI.balanceOf(address(this));
+        // lock CHAI to bridge contract
+        uint256 chaiAmount = chai.balanceOf(address(this));
     }
 
     function generateDAIPermitHash(address to, uint256 amount, uint256 expiry)
@@ -117,7 +115,7 @@ contract WarpyRelayer is GSNRecipient, Ownable {
         uint256 maxPossibleCharge
     ) external view returns (uint256, bytes memory) {
         return _approveRelayedCall();
-        // return _rejectRelayedCall(ERRCODE_ERR);
+        // return _rejectRelayedCall(errCode);
     }
 
     function _preRelayedCall(bytes memory context) internal returns (bytes32) {}
