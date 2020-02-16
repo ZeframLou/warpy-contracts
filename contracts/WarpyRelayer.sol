@@ -114,8 +114,17 @@ contract WarpyRelayer is GSNRecipient, Ownable {
         bytes calldata approvalData,
         uint256 maxPossibleCharge
     ) external view returns (uint256, bytes memory) {
-        return _approveRelayedCall();
-        // return _rejectRelayedCall(errCode);
+        // only accept calls to depositDAI()
+        bool shouldAccept = (
+            (encodedFunction[0] == this.depositDAI.selector[0]) &&
+            (encodedFunction[1] == this.depositDAI.selector[1]) &&
+            (encodedFunction[2] == this.depositDAI.selector[2]) &&
+            (encodedFunction[3] == this.depositDAI.selector[3]));
+        if (shouldAccept) {
+            return _approveRelayedCall();
+        } else {
+            return _rejectRelayedCall(1);
+        }
     }
 
     function _preRelayedCall(bytes memory context) internal returns (bytes32) {}
