@@ -4,12 +4,8 @@
 const env = require("@nomiclabs/buidler");
 
 async function main() {
-  // You can run Buidler tasks from a script.
-  // For example, we make sure everything is compiled by running "compile"
-  await env.run("compile");
-
   const WarpyRelayer = env.artifacts.require("WarpyRelayer");
-  const WCHAI_ADDR = "0x0";
+  const WCHAI_ADDR = "0x7e7699d76D3b21F870FD2474531CE0D4006Af3ab";
 
   const relayer = await WarpyRelayer.new(WCHAI_ADDR);
   console.log(`Deployed WarpyRelayer at address ${relayer.address}`);

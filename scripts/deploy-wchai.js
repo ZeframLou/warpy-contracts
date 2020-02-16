@@ -4,10 +4,6 @@
 const env = require("@nomiclabs/buidler");
 
 async function main() {
-  // You can run Buidler tasks from a script.
-  // For example, we make sure everything is compiled by running "compile"
-  await env.run("compile");
-
   const WrappedChai = env.artifacts.require("WrappedChai");
 
   const wchai = await WrappedChai.new();
