@@ -1,5 +1,7 @@
 # Warpy Smart Contracts
 
+<img src="https://i.imgur.com/JAuTRR1.png" height="100px" width="100px">
+
 **Warpy is Venmo + them 🔥 DeFi interests**
 
 Warpy smoothly onboards users into a DeFi savings account: sign up with email/phone number & deposit with debit card (Fortmatic), and get interest-bearing DAI (Chai), all without using Ether/gas.
