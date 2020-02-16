@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "./interfaces/KyberNetwork.sol";
 import "./interfaces/Dai.sol";
 import "./interfaces/Chai.sol";
+import "./WrappedChai.sol";
 
 contract WarpyRelayer is GSNRecipient, Ownable {
     using SafeMath for uint256;
@@ -17,6 +18,7 @@ contract WarpyRelayer is GSNRecipient, Ownable {
     address public constant KYBER_ADDR = 0x818E6FECD516Ecc3849DAf6845e3EC868087B755;
     address public constant DAI_ADDR = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant CHAI_ADDR = 0x06AF07097C9Eeb7fD685c692751D5C66dB49c215;
+    address public constant LOOM_GATEWAY_ADDR = 0xE080079Ac12521D57573f39543e1725EA3E16DcC;
     address internal constant ETH_ADDR = address(
         0x00eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
     ); // denotes ETH in KyberNetwork
@@ -25,6 +27,14 @@ contract WarpyRelayer is GSNRecipient, Ownable {
     address public constant KYBER_BENEFICIARY = 0x332D87209f7c8296389C307eAe170c2440830A47;
     bytes internal constant PERM_HINT = "PERM";
     uint256 internal constant MAX_QTY = (10**28); // 10B tokens
+
+    // Instance variables
+    address public WCHAI_ADDR;
+
+
+    constructor (address wrappedChaiAddr) public {
+        WCHAI_ADDR = wrappedChaiAddr;
+    }
 
     /**
         Main
@@ -71,11 +81,31 @@ contract WarpyRelayer is GSNRecipient, Ownable {
         dai.approve(CHAI_ADDR, amountAfterFee);
         chai.join(address(this), amountAfterFee);
 
-        // lock CHAI to bridge contract
+        // Wrap CHAI
         uint256 chaiAmount = chai.balanceOf(address(this));
+        WrappedChai wchai = WrappedChai(WCHAI_ADDR);
+        chai.approve(WCHAI_ADDR, chaiAmount);
+        wchai.mintAndApproveOwner(to, chaiAmount);
+
+        // lock WCHAI to bridge contract
+        wchai.transferFrom(to, LOOM_GATEWAY_ADDR, chaiAmount);
     }
 
-    function generateDAIPermitHash(address to, uint256 amount, uint256 expiry)
+    function withdrawDAI(uint256 amount) public {
+        // Burn WCHAI into CHAI
+        WrappedChai wchai = WrappedChai(WCHAI_ADDR);
+        wchai.burnIntoCHAI(_msgSender(), amount);
+
+        // Convert CHAI into DAI
+        Chai chai = Chai(CHAI_ADDR);
+        chai.exit(address(this), amount);
+
+        // Transfer DAI to `to`
+        Dai dai = Dai(DAI_ADDR);
+        dai.transfer(to, dai.balanceOf(address(this)));
+    }
+
+    function generateDAIPermitHash(address to, uint256 expiry)
         public
         view
         returns (bytes32 digest)
@@ -114,13 +144,18 @@ contract WarpyRelayer is GSNRecipient, Ownable {
         bytes calldata approvalData,
         uint256 maxPossibleCharge
     ) external view returns (uint256, bytes memory) {
-        // only accept calls to depositDAI()
-        bool shouldAccept = (
+        // only accept calls to depositDAI() and withdrawDAI()
+        bool isDeposit = (
             (encodedFunction[0] == this.depositDAI.selector[0]) &&
             (encodedFunction[1] == this.depositDAI.selector[1]) &&
             (encodedFunction[2] == this.depositDAI.selector[2]) &&
             (encodedFunction[3] == this.depositDAI.selector[3]));
-        if (shouldAccept) {
+        bool isWithdraw = (
+            (encodedFunction[0] == this.withdrawDAI.selector[0]) &&
+            (encodedFunction[1] == this.withdrawDAI.selector[1]) &&
+            (encodedFunction[2] == this.withdrawDAI.selector[2]) &&
+            (encodedFunction[3] == this.withdrawDAI.selector[3]));
+        if (isDeposit || isWithdraw) {
             return _approveRelayedCall();
         } else {
             return _rejectRelayedCall(1);
