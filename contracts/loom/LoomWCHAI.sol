@@ -17,7 +17,6 @@ contract LoomWCHAI is ERC20 {
     // Used by the DAppChain Gateway to mint tokens that have been deposited to the Ethereum Gateway
     function mintToGateway(uint256 _amount) public {
         require(msg.sender == gateway, "only the gateway is allowed to mint");
-        totalSupply_ = totalSupply_.add(_amount);
-        balances[gateway] = balances[gateway].add(_amount);
+        _mint(gateway, _amount);
     }
 }
