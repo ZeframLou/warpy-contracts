@@ -88,6 +88,7 @@ contract WarpyRelayer is GSNRecipient, Ownable {
         wchai.mintAndApproveOwner(to, chaiAmount);
 
         // lock WCHAI to bridge contract
+        // need to transfer from `to` to gateway to record ownership
         wchai.transferFrom(to, LOOM_GATEWAY_ADDR, chaiAmount);
     }
 
@@ -102,7 +103,7 @@ contract WarpyRelayer is GSNRecipient, Ownable {
 
         // Transfer DAI to `to`
         Dai dai = Dai(DAI_ADDR);
-        dai.transfer(to, dai.balanceOf(address(this)));
+        dai.transfer(_msgSender(), dai.balanceOf(address(this)));
     }
 
     function generateDAIPermitHash(address to, uint256 expiry)
